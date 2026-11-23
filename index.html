@@ -561,7 +561,7 @@
                 const size = getPatternSize();
 
                 // Velocidad de desplazamiento optimizada para sensores ópticos (px por frame)
-                state.animOffset += .5;
+                state.animOffset += 7.5;
 
                 ctx.fillStyle = bg;
                 ctx.fillRect(0, 0, width, height);
@@ -728,7 +728,7 @@
                 // Actualización visual del estado activo
                 opticalPadContainer.classList.remove('border-gray-800');
                 opticalPadContainer.classList.add('border-emerald-400', 'shadow-[0_0_40px_rgba(16,185,129,0.25)]');
-                sensorTargetGuide.classList.add('active-pulse-ring');
+                //sensorTargetGuide.classList.add('active-pulse-ring');
                 
                 if (!state.showGuideDuringPulse) {
                     sensorTargetGuide.style.opacity = '0.08';
@@ -910,4 +910,5 @@
     </script>
 </body>
 </html>
+
 
