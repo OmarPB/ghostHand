@@ -268,7 +268,7 @@
                         <label for="intervalSlider" class="text-xs font-medium text-gray-300">Intervalo de espera</label>
                         <span id="intervalValue" class="font-mono text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded">15 seg</span>
                     </div>
-                    <input type="range" id="intervalSlider" min="30" max="240" step="1" value="30" class="w-full">
+                    <input type="range" id="intervalSlider" min="60" max="240" step="1" value="60" class="w-full">
                 </div>
                 
                 <div
@@ -285,7 +285,7 @@
                         <label for="durationSlider" class="text-xs font-medium text-gray-300">Duración del movimiento</label>
                         <span id="durationValue" class="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">2.5 seg</span>
                     </div>
-                    <input type="range" id="durationSlider" min="10" max="30" step="0.5" value="10" class="w-full">
+                    <input type="range" id="durationSlider" min="10" max="20" step="0.5" value="10" class="w-full">
                 </div>
             </div>
 
@@ -424,7 +424,7 @@
                 durationSec: 2.5,        // Duración de cada pulso activo (segundos)
                 contrastPct: 100,        // Brillo/contraste (30 a 100)
                 scaleLevel: 2,           // 1: Fino, 2: Medio, 3: Grueso
-                showGuideDuringPulse: true,
+                showGuideDuringPulse: false,
                 pulseCount: 0,
                 
                 // Control de tiempos de alta precisión
@@ -561,7 +561,7 @@
                 const size = getPatternSize();
 
                 // Velocidad de desplazamiento optimizada para sensores ópticos (px por frame)
-                state.animOffset += 7.5;
+                state.animOffset += .5;
 
                 ctx.fillStyle = bg;
                 ctx.fillRect(0, 0, width, height);
@@ -910,5 +910,3 @@
     </script>
 </body>
 </html>
-
-
