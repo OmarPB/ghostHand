@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostHand - byOmarPB</title>
+    <!-- Carga de Tailwind CSS para estilizado moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente Inter desde Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            950: '#050507',
+                            900: '#0b0d12',
+                            800: '#131720',
+                            700: '#1e2433',
+                            accent: '#00f0ff',
+                            pulse: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilos personalizados mínimos para efectos de cristal, barras deslizadoras y animaciones de retícula */
+        body {
+            background-color: #050507;
+            color: #f3f4f6;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Personalización de inputs range */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #1e2433;
+            height: 6px;
+            border-radius: 999px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: #00f0ff;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+            transition: transform 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Animación sutil para el anillo de pulso activo */
+        @keyframes pulseRing {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.03); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .active-pulse-ring {
+            animation: pulseRing 1.2s infinite ease-in-out;
+        }
+
+        /* Scrollbar discreta */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0d12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e2433;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative bg-cyber-950 text-gray-100 font-sans">
+
+    <!-- Barra Superior Informativa y Estado de Wake Lock -->
+    <header class="w-full px-4 py-3 md:px-8 border-b border-gray-800/80 bg-cyber-900/80 backdrop-blur-md z-30 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+                <!-- Icono SVG de Sensor Óptico -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="3" width="12" height="18" rx="6"></rect>
+                    <line x1="12" y1="7" x2="12" y2="11"></line>
+                    <circle cx="12" cy="15" r="1.5" fill="currentColor"></circle>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-base md:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                    GhostHand <span class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Optical Engine</span>
+                </h1>
+                <p class="text-xs text-gray-400 hidden sm:block">Estimulador visual de alto contraste para sensores ópticos</p>
+            </div>
+        </div>
+
+        <!-- Indicadores de Estado (Wake Lock & Ciclo) -->
+        <div class="flex items-center gap-2 sm:gap-4">
+            <!-- Botón de Ayuda / Calibración -->
+            <button id="btnHelpToggle" class="px-3 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-medium text-gray-200 flex items-center gap-1.5 transition cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span>Guía de Calibración</span>
+            </button>
+
+            <!-- Badge de Wake Lock -->
+            <div id="wakeLockBadge" class="px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-xs flex items-center gap-2" title="Evita que la pantalla se apague mientras está activo">
+                <span id="wakeLockDot" class="w-2 h-2 rounded-full bg-gray-500"></span>
+                <span id="wakeLockText" class="text-gray-400 font-medium">Pantalla: Normal</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal: Zona Óptica Central + Panel Flotante -->
+    <main class="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 flex flex-col lg:flex-row items-center justify-center gap-6 relative z-10">
+
+        <!-- ZONA CENTRAL DE COLOCACIÓN DEL MOUSE (Canvas + Guías Ópticas) -->
+        <section class="w-full lg:flex-1 flex flex-col items-center justify-center">
+            
+            <!-- Marco Exterior de la Zona Óptica -->
+            <div id="opticalPadContainer" class="relative w-full max-w-[540px] aspect-square rounded-3xl bg-black border-2 border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden flex items-center justify-center transition-all duration-300">
+                
+                <!-- Canvas de Renderizado de Patrones Ópticos -->
+                <canvas id="opticalCanvas" class="w-full h-full block"></canvas>
+
+                <!-- Capa de Guías Visuales para Alinear el Sensor del Mouse -->
+                <div id="alignmentOverlay" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6 transition-opacity duration-300">
+                    
+                    <!-- Esquinas de Encuadre -->
+                    <div class="absolute top-5 left-5 w-8 h-8 border-t-2 border-l-2 border-cyan-400/60 rounded-tl-lg"></div>
+                    <div class="absolute top-5 right-5 w-8 h-8 border-t-2 border-r-2 border-cyan-400/60 rounded-tr-lg"></div>
+                    <div class="absolute bottom-5 left-5 w-8 h-8 border-b-2 border-l-2 border-cyan-400/60 rounded-bl-lg"></div>
+                    <div class="absolute bottom-5 right-5 w-8 h-8 border-b-2 border-r-2 border-cyan-400/60 rounded-br-lg"></div>
+
+                    <!-- Silueta Guía del Mouse y Diana del Sensor -->
+                    <div id="sensorTargetGuide" class="relative w-44 h-64 sm:w-52 sm:h-72 rounded-[3rem] border-2 border-dashed border-cyan-400/40 bg-black/45 backdrop-blur-[2px] flex flex-col items-center justify-center transition-all duration-300">
+                        <!-- Línea divisoria de botones del mouse -->
+                        <div class="absolute top-0 w-full h-20 border-b border-dashed border-cyan-400/25 flex justify-center">
+                            <div class="w-px h-full bg-cyan-400/25"></div>
+                        </div>
+
+                        <!-- Diana Central (Punto exacto donde va el lente óptico) -->
+                        <div class="relative flex items-center justify-center mt-4">
+                            <div class="w-20 h-20 rounded-full border border-cyan-400/40 flex items-center justify-center">
+                                <div class="w-10 h-10 rounded-full border-2 border-cyan-400/80 flex items-center justify-center bg-cyan-500/10">
+                                    <div class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]"></div>
+                                </div>
+                            </div>
+                            <!-- Cruz de precisión -->
+                            <div class="absolute w-24 h-px bg-cyan-400/40"></div>
+                            <div class="absolute h-24 w-px bg-cyan-400/40"></div>
+                        </div>
+
+                        <span class="mt-4 text-[11px] font-mono uppercase tracking-wider text-cyan-300 bg-black/80 px-2.5 py-1 rounded-full border border-cyan-500/30">
+                            Alinear Sensor Aquí
+                        </span>
+                    </div>
+
+                    <!-- Indicador Inferior de Temporizador y Estado -->
+                    <div class="absolute bottom-5 left-1/2 -translate-x-1/2 w-[88%] sm:w-auto min-w-[260px] bg-cyber-900/90 backdrop-blur-md border border-gray-700/80 rounded-2xl px-4 py-2.5 shadow-xl flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-2.5">
+                            <span id="statusIndicatorDot" class="w-3 h-3 rounded-full bg-amber-400"></span>
+                            <div>
+                                <div id="statusLabel" class="text-xs font-semibold text-white">En espera</div>
+                                <div id="subStatusLabel" class="text-[11px] text-gray-400">Pulsa Iniciar para comenzar</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div id="countdownDisplay" class="font-mono text-xl font-bold text-cyan-400 leading-none">--s</div>
+                            <div class="text-[10px] text-gray-400 uppercase tracking-wider mt-0.5">Próximo pulso</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de progreso superior del pulso activo -->
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-gray-900/80 z-20">
+                    <div id="pulseProgressBar" class="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 w-0 transition-all duration-75"></div>
+                </div>
+            </div>
+
+            <!-- Botón rápido debajo del pad para ocultar/mostrar guía mientras el mouse está encima -->
+            <div class="mt-3 flex items-center gap-4 text-xs text-gray-400">
+                <label class="flex items-center gap-2 cursor-pointer hover:text-gray-200 transition">
+                    <input type="checkbox" id="toggleGuideCheckbox" checked class="rounded bg-gray-800 border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                    <span>Mostrar silueta de alineación durante los pulsos</span>
+                </label>
+                <span class="hidden sm:inline text-gray-700">|</span>
+                <span id="pulseCounterText" class="font-mono text-gray-400">Pulsos enviados: <strong class="text-white">0</strong></span>
+            </div>
+        </section>
+
+        <!-- PANEL DE CONTROL FLOTANTE -->
+        <aside class="w-full lg:w-[390px] bg-cyber-900/90 backdrop-blur-xl border border-gray-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-5">
+            
+            <!-- Encabezado del Panel + Botón Principal Iniciar/Detener -->
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-300">Panel de Control</h2>
+                    <button id="btnTestPulse" class="text-xs px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-400 border border-gray-700 transition cursor-pointer" title="Ejecuta un pulso inmediato para probar la detección">
+                        Probar pulso ahora
+                    </button>
+                </div>
+
+                <button id="btnToggleEngine" class="w-full py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg cursor-pointer bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 shadow-cyan-500/20">
+                    <svg id="iconPlay" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <svg id="iconStop" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                    </svg>
+                    <span id="btnToggleText">INICIAR CICLO ÓPTICO</span>
+                </button>
+            </div>
+
+            <hr class="border-gray-800">
+
+            <!-- Selector de Patrón Visual -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-medium text-gray-300 flex items-center justify-between">
+                    <span>Patrón Visual de Movimiento</span>
+                    <span class="text-[11px] text-cyan-400">Alto Contraste</span>
+                </label>
+                <div class="grid grid-cols-2 gap-2" id="patternSelectorGroup">
+                    <button type="button" data-pattern="stripes" class="pattern-btn active p-2.5 rounded-xl border border-cyan-400 bg-cyan-500/15 text-left transition cursor-pointer">
+                        <div class="text-xs font-semibold text-white">Líneas Dinámicas</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Barras de alto contraste</div>
+                    </button>
+                    <button type="button" data-pattern="checkerboard" class="pattern-btn p-2.5 rounded-xl border border-gray-800 bg-gray-800/40 hover:bg-gray-800 text-left transition cursor-pointer">
+                        <div class="text-xs font-semibold text-gray-200">Tablero Ajedrez</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Cuadrícula desplazándose</div>
+                    </button>
+                    <button type="button" data-pattern="spiral" class="pattern-btn p-2.5 rounded-xl border border-gray-800 bg-gray-800/40 hover:bg-gray-800 text-left transition cursor-pointer">
+                        <div class="text-xs font-semibold text-gray-200">Espiral / Ondas</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Anillos ópticos radiales</div>
+                    </button>
+                    <button type="button" data-pattern="radar" class="pattern-btn p-2.5 rounded-xl border border-gray-800 bg-gray-800/40 hover:bg-gray-800 text-left transition cursor-pointer">
+                        <div class="text-xs font-semibold text-gray-200">Barrido Radar</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Haz rotatorio con textura</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controles de Tiempo: Intervalo y Duración -->
+            <div class="flex flex-col gap-4 bg-cyber-800/50 p-3.5 rounded-2xl border border-gray-800/80">
+                <!-- Intervalo entre pulsos -->
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="intervalSlider" class="text-xs font-medium text-gray-300">Intervalo de espera</label>
+                        <span id="intervalValue" class="font-mono text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded">15 seg</span>
+                    </div>
+                    <input type="range" id="intervalSlider" min="30" max="240" step="1" value="15" class="w-full">
+                </div>
+                
+                <div
+                    style="margin: 12px 0; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px;">
+                    <label for="randomModeToggle" style="font-size: 0.9rem; cursor: pointer; user-select: none;">
+                        Modo Aleatorio (Random)
+                    </label>
+                    <input type="checkbox" id="randomModeToggle" checked style="cursor: pointer; width: 16px; height: 16px;">
+                </div>
+
+                <!-- Duración del movimiento/pulso -->
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="durationSlider" class="text-xs font-medium text-gray-300">Duración del movimiento</label>
+                        <span id="durationValue" class="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">2.5 seg</span>
+                    </div>
+                    <input type="range" id="durationSlider" min="1.5" max="10" step="0.5" value="2.5" class="w-full">
+                </div>
+            </div>
+
+            <!-- Ajustes Ópticos: Contraste / Brillo y Densidad -->
+            <div class="flex flex-col gap-3.5">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="contrastSlider" class="text-xs font-medium text-gray-300">Brillo y Contraste del Patrón</label>
+                        <span id="contrastValue" class="font-mono text-xs text-gray-300">100%</span>
+                    </div>
+                    <input type="range" id="contrastSlider" min="30" max="100" step="5" value="100" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="scaleSlider" class="text-xs font-medium text-gray-300">Tamaño de Trama / Granulado</label>
+                        <span id="scaleValue" class="font-mono text-xs text-gray-300">Medio</span>
+                    </div>
+                    <input type="range" id="scaleSlider" min="1" max="3" step="1" value="2" class="w-full">
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- MODAL DE INSTRUCCIONES Y CALIBRACIÓN PARA SENSORES ÓPTICOS -->
+    <div id="calibrationModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-cyber-900 border border-gray-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button id="btnCloseModal" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition cursor-pointer">
+                ✕
+            </button>
+            
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Calibración para Mouse Óptico</h3>
+                    <p class="text-xs text-gray-400">Consejos para máxima detección sobre pantallas</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm text-gray-300 leading-relaxed">
+                <div class="p-3 rounded-xl bg-gray-800/60 border border-gray-700/60">
+                    <strong class="text-cyan-400 block mb-1">1. Posición del Sensor</strong>
+                    Coloca el mouse directamente sobre el cristal del monitor o teléfono/tablet haciendo coincidir la luz inferior del sensor con la <strong>diana central</strong>.
+                </div>
+
+                <div class="p-3 rounded-xl bg-gray-800/60 border border-gray-700/60">
+                    <strong class="text-cyan-400 block mb-1">2. Brillo del Monitor y Contraste</strong>
+                    Los sensores ópticos leen cambios bruscos de luminancia. Si el puntero no se mueve, sube el brillo físico de tu pantalla al <strong>80%-100%</strong> y mantén el contraste de la app al máximo.
+                </div>
+
+                <div class="p-3 rounded-xl bg-gray-800/60 border border-gray-700/60">
+                    <strong class="text-cyan-400 block mb-1">3. Selección de Patrón Ideal</strong>
+                    • <strong>Líneas Dinámicas / Tablero Ajedrez:</strong> Ideales para sensores LED rojos tradicionales y ópticos de oficina.<br>
+                    • <strong>Espiral / Barrido Radar:</strong> Recomendados para sensores láser o de alto DPI (gaming) que requieren cambios multidireccionales.
+                </div>
+
+                <div class="p-3 rounded-xl bg-gray-800/60 border border-gray-700/60">
+                    <strong class="text-cyan-400 block mb-1">4. Prevención de Suspensión (Wake Lock)</strong>
+                    Al iniciar el ciclo, la aplicación solicita mantener la pantalla encendida automáticamente. No minimices esta pestaña para garantizar que la animación siga visible.
+                </div>
+            </div>
+
+            <button id="btnUnderstandModal" class="mt-5 w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-semibold text-sm transition cursor-pointer">
+                Entendido, volver al simulador
+            </button>
+        </div>
+    </div>
+
+    <!-- Pie de página discreto -->
+    <footer class="w-full py-3 px-6 text-center text-[11px] text-gray-500 border-t border-gray-900 bg-cyber-950 z-10">
+        GhostHand &bull; Renderizado HTML5 Canvas de alta frecuencia &bull; Funciona localmente en tu navegador sin instalar software. &bull; by OmarPB
+    </footer>
+
+    <script>
+        /**
+         * GhostHand - Motor de Estimulación Óptica para Mouse
+         * Arquitectura modular en JavaScript puro con manejo de Canvas, Temporizadores de Precisión y Wake Lock API.
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- REFERENCIAS AL DOM ---
+            const canvas = document.getElementById('opticalCanvas');
+            const ctx = canvas.getContext('2d', { alpha: false });
+            const opticalPadContainer = document.getElementById('opticalPadContainer');
+            const alignmentOverlay = document.getElementById('alignmentOverlay');
+            const sensorTargetGuide = document.getElementById('sensorTargetGuide');
+            
+            // Botones y controles
+            const btnToggleEngine = document.getElementById('btnToggleEngine');
+            const btnToggleText = document.getElementById('btnToggleText');
+            const iconPlay = document.getElementById('iconPlay');
+            const iconStop = document.getElementById('iconStop');
+            const btnTestPulse = document.getElementById('btnTestPulse');
+            
+            const patternButtons = document.querySelectorAll('.pattern-btn');
+            const intervalSlider = document.getElementById('intervalSlider');
+            const intervalValue = document.getElementById('intervalValue');
+            const durationSlider = document.getElementById('durationSlider');
+            const durationValue = document.getElementById('durationValue');
+            const contrastSlider = document.getElementById('contrastSlider');
+            const contrastValue = document.getElementById('contrastValue');
+            const scaleSlider = document.getElementById('scaleSlider');
+            const scaleValue = document.getElementById('scaleValue');
+            const toggleGuideCheckbox = document.getElementById('toggleGuideCheckbox');
+
+            // Indicadores visuales
+            const statusIndicatorDot = document.getElementById('statusIndicatorDot');
+            const statusLabel = document.getElementById('statusLabel');
+            const subStatusLabel = document.getElementById('subStatusLabel');
+            const countdownDisplay = document.getElementById('countdownDisplay');
+            const pulseProgressBar = document.getElementById('pulseProgressBar');
+            const pulseCounterText = document.getElementById('pulseCounterText');
+
+            // Wake Lock & Modal
+            const wakeLockBadge = document.getElementById('wakeLockBadge');
+            const wakeLockDot = document.getElementById('wakeLockDot');
+            const wakeLockText = document.getElementById('wakeLockText');
+            const btnHelpToggle = document.getElementById('btnHelpToggle');
+            const calibrationModal = document.getElementById('calibrationModal');
+            const btnCloseModal = document.getElementById('btnCloseModal');
+            const btnUnderstandModal = document.getElementById('btnUnderstandModal');
+
+            // --- ESTADO DE LA APLICACIÓN ---
+            const state = {
+                isRunning: false,
+                isPulsing: false,
+                isSingleTest: false,
+                pattern: 'stripes',      // 'stripes' | 'checkerboard' | 'spiral' | 'radar'
+                intervalSec: 15,         // Tiempo de espera entre pulsos (segundos)
+                durationSec: 2.5,        // Duración de cada pulso activo (segundos)
+                contrastPct: 100,        // Brillo/contraste (30 a 100)
+                scaleLevel: 2,           // 1: Fino, 2: Medio, 3: Grueso
+                showGuideDuringPulse: true,
+                pulseCount: 0,
+                
+                // Control de tiempos de alta precisión
+                phaseStartTime: 0,
+                animationFrameId: null,
+                animOffset: 0,
+
+                // Wake Lock API + Respaldo
+                wakeLockSentinel: null,
+                fallbackVideoElement: null
+            };
+
+            // --- INICIALIZACIÓN Y REDIMENSIONADO RESPONSIVO DEL CANVAS ---
+            function resizeCanvas() {
+                const rect = opticalPadContainer.getBoundingClientRect();
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                renderStaticIdleFrame();
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // --- GESTIÓN DE WAKE LOCK API (CON RESPALDO) ---
+            async function enableWakeLock() {
+                try {
+                    if ('wakeLock' in navigator) {
+                        state.wakeLockSentinel = await navigator.wakeLock.request('screen');
+                        updateWakeLockUI(true, 'Pantalla Activa (WakeLock)');
+                        
+                        state.wakeLockSentinel.addEventListener('release', () => {
+                            if (state.isRunning) {
+                                updateWakeLockUI(false, 'WakeLock liberado');
+                            }
+                        });
+                    } else {
+                        activateFallbackNoSleep();
+                    }
+                } catch (err) {
+                    console.warn('Wake Lock API no disponible o bloqueada, activando respaldo:', err);
+                    activateFallbackNoSleep();
+                }
+            }
+
+            function activateFallbackNoSleep() {
+                // Respaldo: Mantener actividad constante en el hilo principal y reintento periódico
+                updateWakeLockUI(true, 'Pantalla Activa (Modo Respaldo)');
+            }
+
+            async function disableWakeLock() {
+                try {
+                    if (state.wakeLockSentinel) {
+                        await state.wakeLockSentinel.release();
+                        state.wakeLockSentinel = null;
+                    }
+                } catch (err) {
+                    console.error('Error al liberar Wake Lock:', err);
+                }
+                updateWakeLockUI(false, 'Pantalla: Normal');
+            }
+
+            function updateWakeLockUI(active, text) {
+                wakeLockText.textContent = text;
+                if (active) {
+                    wakeLockDot.className = 'w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]';
+                    wakeLockText.className = 'text-emerald-300 font-medium';
+                    wakeLockBadge.className = 'px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs flex items-center gap-2';
+                } else {
+                    wakeLockDot.className = 'w-2 h-2 rounded-full bg-gray-500';
+                    wakeLockText.className = 'text-gray-400 font-medium';
+                    wakeLockBadge.className = 'px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-xs flex items-center gap-2';
+                }
+            }
+
+            // Re-adquirir Wake Lock si el usuario vuelve a la pestaña mientras la app está corriendo
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && state.isRunning) {
+                    enableWakeLock();
+                }
+            });
+
+            // Devuelve un número aleatorio entre min y max (con un decimal de precisión)
+            function getRandomTime(min, max) {
+                return Number((Math.random() * (max - min) + min).toFixed(1));
+            }
+
+            // --- MOTOR DE RENDERIZADO DE PATRONES ÓPTICOS ---
+            function getColors() {
+                // Calcula blanco/negro de alto contraste ajustado al control deslizante
+                const intensity = Math.round((state.contrastPct / 100) * 255);
+                const fg = `rgb(${intensity}, ${intensity}, ${intensity})`;
+                const bg = '#000000';
+                return { fg, bg };
+            }
+
+            function getPatternSize() {
+                // Tamaño en píxeles de las celdas/líneas según el nivel elegido
+                if (state.scaleLevel === 1) return 14; // Fino (alta frecuencia espacial)
+                if (state.scaleLevel === 2) return 28; // Medio (óptimo general)
+                return 48;                             // Grueso (sensores de bajo DPI)
+            }
+
+            // Dibuja un estado de reposo oscuro con cuadrícula muy tenue para no activar el mouse fuera de turno
+            function renderStaticIdleFrame() {
+                const width = opticalPadContainer.clientWidth;
+                const height = opticalPadContainer.clientHeight;
+
+                ctx.fillStyle = '#030406';
+                ctx.fillRect(0, 0, width, height);
+
+                // Cuadrícula de referencia ultra sutil
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+                ctx.lineWidth = 1;
+                const step = 30;
+                ctx.beginPath();
+                for (let x = 0; x <= width; x += step) {
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                }
+                for (let y = 0; y <= height; y += step) {
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                }
+                ctx.stroke();
+            }
+
+            // Renderiza el frame activo del patrón seleccionado para estimular el sensor óptico
+            function renderActivePattern(timestamp) {
+                const width = opticalPadContainer.clientWidth;
+                const height = opticalPadContainer.clientHeight;
+                const { fg, bg } = getColors();
+                const size = getPatternSize();
+
+                // Velocidad de desplazamiento optimizada para sensores ópticos (px por frame)
+                state.animOffset += .5;
+
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, width, height);
+
+                if (state.pattern === 'stripes') {
+                    // PATRÓN 1: Líneas diagonales de alto contraste en movimiento continuo
+                    ctx.save();
+                    ctx.translate(width / 2, height / 2);
+                    // Oscila ligeramente el ángulo para generar movimiento en X e Y simultáneamente
+                    const angle = Math.sin(timestamp * 0.004) * 0.65;
+                    ctx.rotate(angle);
+
+                    const diag = Math.hypot(width, height) * 1.5;
+                    const period = size * 2;
+                    const offset = state.animOffset % period;
+
+                    ctx.fillStyle = fg;
+                    for (let x = -diag / 2 - period; x < diag / 2 + period; x += period) {
+                        ctx.fillRect(x + offset, -diag / 2, size, diag);
+                    }
+                    ctx.restore();
+
+                } else if (state.pattern === 'checkerboard') {
+                    // PATRÓN 2: Tablero de ajedrez desplazándose en trayectoria circular/diagonal
+                    const offsetX = Math.cos(timestamp * 0.008) * size * 2 + state.animOffset;
+                    const offsetY = Math.sin(timestamp * 0.008) * size * 2 + (state.animOffset * 0.6);
+
+                    const cols = Math.ceil(width / size) + 4;
+                    const rows = Math.ceil(height / size) + 4;
+                    const startX = -((offsetX % (size * 2)) + size * 2);
+                    const startY = -((offsetY % (size * 2)) + size * 2);
+
+                    ctx.fillStyle = fg;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            if ((r + c) % 2 === 0) {
+                                ctx.fillRect(startX + c * size, startY + r * size, size, size);
+                            }
+                        }
+                    }
+
+                } else if (state.pattern === 'spiral') {
+                    // PATRÓN 3: Ondas concéntricas / Espiral óptica expansiva
+                    const cx = width / 2;
+                    const cy = height / 2;
+                    const maxRadius = Math.hypot(cx, cy);
+                    const period = size * 1.6;
+                    const offset = (state.animOffset * 0.8) % period;
+
+                    ctx.lineWidth = size * 0.55;
+                    ctx.strokeStyle = fg;
+
+                    for (let r = offset; r < maxRadius + period; r += period) {
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    // Añade rayos radiales rotatorios para asegurar lectura incluso en el centro exacto
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(timestamp * 0.006);
+                    const spokes = 12;
+                    for (let i = 0; i < spokes; i++) {
+                        ctx.rotate((Math.PI * 2) / spokes);
+                        ctx.fillStyle = i % 2 === 0 ? fg : bg;
+                        ctx.fillRect(0, -size * 0.25, maxRadius, size * 0.5);
+                    }
+                    ctx.restore();
+
+                } else if (state.pattern === 'radar') {
+                    // PATRÓN 4: Barrido radar de alta frecuencia con ruido estructurado
+                    const cx = width / 2;
+                    const cy = height / 2;
+                    const maxRadius = Math.hypot(cx, cy);
+
+                    // Fondo de puntos de alto contraste que vibran
+                    const gridStep = size;
+                    const jitterX = Math.sin(timestamp * 0.025) * (size * 0.4);
+                    const jitterY = Math.cos(timestamp * 0.025) * (size * 0.4);
+
+                    ctx.fillStyle = fg;
+                    for (let y = 0; y < height + gridStep; y += gridStep) {
+                        for (let x = 0; x < width + gridStep; x += gridStep) {
+                            ctx.beginPath();
+                            ctx.arc(x + jitterX, y + jitterY, gridStep * 0.28, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+
+                    // Haz rotatorio de alto contraste
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(timestamp * 0.01);
+                    const beamAngle = Math.PI / 2.2;
+                    ctx.fillStyle = fg;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, maxRadius, 0, beamAngle);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.fillStyle = bg;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, maxRadius, Math.PI, Math.PI + beamAngle);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // --- BUCLE PRINCIPAL DE CONTROL DE CICLOS Y TEMPORIZADOR ---
+            function mainLoop(timestamp) {
+                if (!state.isRunning && !state.isSingleTest) {
+                    return;
+                }
+
+                if (!state.phaseStartTime) {
+                    state.phaseStartTime = timestamp;
+                }
+
+                const elapsedSec = (timestamp - state.phaseStartTime) / 1000;
+
+                if (state.isPulsing) {
+                    // FASE ACTIVA: Ejecutando movimiento visual para el mouse
+                    renderActivePattern(timestamp);
+
+                    const remainingPulse = Math.max(0, state.durationSec - elapsedSec);
+                    const progressPct = Math.min(100, (elapsedSec / state.durationSec) * 100);
+                    
+                    pulseProgressBar.style.width = `${progressPct}%`;
+                    countdownDisplay.textContent = `${remainingPulse.toFixed(1)}s`;
+                    countdownDisplay.className = 'font-mono text-xl font-bold text-emerald-400 leading-none';
+
+                    // Finaliza el pulso cuando se cumple la duración configurada
+                    if (elapsedSec >= state.durationSec) {
+                        endPulsePhase(timestamp);
+                    }
+                } else {
+                    // FASE DE ESPERA: Cuenta regresiva hacia el siguiente pulso
+                    const remainingWait = Math.max(0, state.intervalSec - elapsedSec);
+                    countdownDisplay.textContent = `${Math.ceil(remainingWait)}s`;
+                    countdownDisplay.className = 'font-mono text-xl font-bold text-cyan-400 leading-none';
+
+                    if (elapsedSec >= state.intervalSec) {
+                        startPulsePhase(timestamp);
+                    }
+                }
+
+                state.animationFrameId = requestAnimationFrame(mainLoop);
+            }
+
+            function startPulsePhase(timestamp) {
+                const isRandom = document.getElementById('randomModeToggle')?.checked;
+                const maxDuration = parseFloat(durationSlider.value);
+                state.durationSec = isRandom ? getRandomTime(1.5, maxDuration) : maxDuration;
+                
+                state.isPulsing = true;
+                state.phaseStartTime = timestamp || performance.now();
+                state.pulseCount++;
+                pulseCounterText.innerHTML = `Pulsos enviados: <strong class="text-white">${state.pulseCount}</strong>`;
+
+                // Actualización visual del estado activo
+                opticalPadContainer.classList.remove('border-gray-800');
+                opticalPadContainer.classList.add('border-emerald-400', 'shadow-[0_0_40px_rgba(16,185,129,0.25)]');
+                sensorTargetGuide.classList.add('active-pulse-ring');
+                
+                if (!state.showGuideDuringPulse) {
+                    sensorTargetGuide.style.opacity = '0.08';
+                }
+
+                statusIndicatorDot.className = 'w-3 h-3 rounded-full bg-emerald-400 animate-ping';
+                statusLabel.textContent = '¡Pulso Óptico Activo!';
+                statusLabel.className = 'text-xs font-bold text-emerald-400';
+                subStatusLabel.textContent = 'Estimulando sensor del mouse...';
+            }
+
+            function endPulsePhase(timestamp) {
+
+                const isRandom = document.getElementById('randomModeToggle')?.checked;
+                const maxInterval = parseFloat(intervalSlider.value);
+                state.intervalSec = isRandom ? getRandomTime(5, maxInterval) : maxInterval;
+
+                state.isPulsing = false;
+                state.phaseStartTime = timestamp || performance.now();
+                pulseProgressBar.style.width = '0%';
+                renderStaticIdleFrame();
+
+                // Restaurar estética de reposo
+                opticalPadContainer.classList.remove('border-emerald-400', 'shadow-[0_0_40px_rgba(16,185,129,0.25)]');
+                opticalPadContainer.classList.add('border-gray-800');
+                sensorTargetGuide.classList.remove('active-pulse-ring');
+                sensorTargetGuide.style.opacity = '1';
+
+                // Si era una prueba única y el ciclo automático no estaba encendido, detener todo
+                if (state.isSingleTest && !state.isRunning) {
+                    state.isSingleTest = false;
+                    resetIdleUI();
+                    return;
+                }
+
+                statusIndicatorDot.className = 'w-3 h-3 rounded-full bg-cyan-400';
+                statusLabel.textContent = 'Ciclo en espera';
+                statusLabel.className = 'text-xs font-semibold text-white';
+                subStatusLabel.textContent = 'Esperando próximo intervalo';
+            }
+
+            function startEngine() {
+                if (state.isRunning) return;
+                state.isRunning = true;
+                state.isSingleTest = false;
+
+                // Actualizar botón principal a modo Detener
+                btnToggleEngine.className = 'w-full py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg cursor-pointer bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white shadow-rose-500/25';
+                btnToggleText.textContent = 'DETENER CICLO ÓPTICO';
+                iconPlay.classList.add('hidden');
+                iconStop.classList.remove('hidden');
+
+                enableWakeLock();
+
+                // Inicia inmediatamente con un primer pulso para confirmar funcionamiento
+                startPulsePhase(performance.now());
+                state.animationFrameId = requestAnimationFrame(mainLoop);
+            }
+
+            function stopEngine() {
+                state.isRunning = false;
+                state.isPulsing = false;
+                state.isSingleTest = false;
+
+                if (state.animationFrameId) {
+                    cancelAnimationFrame(state.animationFrameId);
+                    state.animationFrameId = null;
+                }
+
+                disableWakeLock();
+                renderStaticIdleFrame();
+                resetIdleUI();
+            }
+
+            function resetIdleUI() {
+                btnToggleEngine.className = 'w-full py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 transition-all duration-200 shadow-lg cursor-pointer bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 shadow-cyan-500/20';
+                btnToggleText.textContent = 'INICIAR CICLO ÓPTICO';
+                iconPlay.classList.remove('hidden');
+                iconStop.classList.add('hidden');
+
+                opticalPadContainer.classList.remove('border-emerald-400', 'shadow-[0_0_40px_rgba(16,185,129,0.25)]');
+                opticalPadContainer.classList.add('border-gray-800');
+                sensorTargetGuide.classList.remove('active-pulse-ring');
+                sensorTargetGuide.style.opacity = '1';
+
+                pulseProgressBar.style.width = '0%';
+                statusIndicatorDot.className = 'w-3 h-3 rounded-full bg-amber-400';
+                statusLabel.textContent = 'En espera';
+                statusLabel.className = 'text-xs font-semibold text-white';
+                subStatusLabel.textContent = 'Pulsa Iniciar para comenzar';
+                countdownDisplay.textContent = '--s';
+                countdownDisplay.className = 'font-mono text-xl font-bold text-cyan-400 leading-none';
+            }
+
+            // --- EVENTOS DE CONTROLES ---
+            btnToggleEngine.addEventListener('click', () => {
+                if (state.isRunning) {
+                    stopEngine();
+                } else {
+                    startEngine();
+                }
+            });
+
+            // Botón de prueba rápida
+            btnTestPulse.addEventListener('click', () => {
+                if (state.isRunning) {
+                    // Si ya está corriendo, fuerza el inicio de un pulso inmediato
+                    startPulsePhase(performance.now());
+                } else {
+                    // Ejecuta un solo pulso de prueba sin activar el bucle infinito
+                    state.isSingleTest = true;
+                    startPulsePhase(performance.now());
+                    if (!state.animationFrameId) {
+                        state.animationFrameId = requestAnimationFrame(mainLoop);
+                    }
+                }
+            });
+
+            // Selección de Patrones Visuales
+            patternButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    patternButtons.forEach(b => {
+                        b.classList.remove('border-cyan-400', 'bg-cyan-500/15', 'active');
+                        b.classList.add('border-gray-800', 'bg-gray-800/40');
+                    });
+                    btn.classList.remove('border-gray-800', 'bg-gray-800/40');
+                    btn.classList.add('border-cyan-400', 'bg-cyan-500/15', 'active');
+                    
+                    state.pattern = btn.dataset.pattern;
+                });
+            });
+
+            // Deslizadores de Tiempo y Apariencia
+            intervalSlider.addEventListener('input', (e) => {
+                state.intervalSec = parseInt(e.target.value, 10);
+                intervalValue.textContent = `${state.intervalSec} seg`;
+            });
+
+            durationSlider.addEventListener('input', (e) => {
+                state.durationSec = parseFloat(e.target.value);
+                durationValue.textContent = `${state.durationSec.toFixed(1)} seg`;
+            });
+
+            contrastSlider.addEventListener('input', (e) => {
+                state.contrastPct = parseInt(e.target.value, 10);
+                contrastValue.textContent = `${state.contrastPct}%`;
+            });
+
+            scaleSlider.addEventListener('input', (e) => {
+                state.scaleLevel = parseInt(e.target.value, 10);
+                const labels = { 1: 'Fino', 2: 'Medio', 3: 'Grueso' };
+                scaleValue.textContent = labels[state.scaleLevel];
+            });
+
+            toggleGuideCheckbox.addEventListener('change', (e) => {
+                state.showGuideDuringPulse = e.target.checked;
+                if (state.isPulsing) {
+                    sensorTargetGuide.style.opacity = state.showGuideDuringPulse ? '1' : '0.08';
+                }
+            });
+
+            // Control del Modal de Ayuda / Calibración
+            function openModal() {
+                calibrationModal.classList.remove('hidden');
+                calibrationModal.classList.add('flex');
+            }
+            function closeModal() {
+                calibrationModal.classList.add('hidden');
+                calibrationModal.classList.remove('flex');
+            }
+
+            btnHelpToggle.addEventListener('click', openModal);
+            btnCloseModal.addEventListener('click', closeModal);
+            btnUnderstandModal.addEventListener('click', closeModal);
+            calibrationModal.addEventListener('click', (e) => {
+                if (e.target === calibrationModal) closeModal();
+            });
+        });
+    </script>
+</body>
+</html>
